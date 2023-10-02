@@ -22,13 +22,16 @@ class passwordRequirements:
     requireCapitals: bool
     minPasswordLength: int
 
-def handleNotInt(x):
+def handleNotInt(x, default: int):
+    # handle int to str conversion
     try:
         return int(x)
-    except Exception as err:
-        print(f"Bad input: input only numbers.")
+    except ValueError as err:
+        print(f"Bad input: {x} is not valid. input whole numbers only. defaulting to {default}")
+        return default
 
 def product(inputlist: list):
+    # multiply list of ints together
     result = 1
     for i in range(len(inputlist)):
         result *= inputlist[i]
@@ -36,32 +39,23 @@ def product(inputlist: list):
 
 
 def calculateStrength(passRec: passwordRequirements):
-    # TODO
-    # num of potential chars ^ num of min chars
-    # adjust for required capitals (at least 1)
-    # adjust for numbers required (at least 1)
+    # calculate the number of possible permutations the given requirements can be arranged
     possiblities = [0]*passRec.minPasswordLength
     for i in range(passRec.minPasswordLength):
-        if passRec.requireCapitals and i > 1:
+        if passRec.requireCapitals and i == 1:
             possiblities[i] = len(capitalAlpha)
-        if passRec.requireNumbers and i > 2:
+        elif passRec.requireNumbers and i == 2:
             possiblities[i] = len(nums)
-        if passRec.requireSpecialCharacters and i > 3:
+        elif passRec.requireSpecialCharacters and i == 3:
             possiblities[i] = len(specialChars)
         else:
-            # print(f"""
-            #     all: {allAlpha} {len(allAlpha)}
-            #     cap: {capitalAlpha} {len(capitalAlpha)}
-            #     nums: {nums} {len(nums)}
-            #     spec: {specialChars} {len(specialChars)}
-            # """)
             possiblities[i] = len(allAlpha) + len(nums) + len(specialChars)
     
     return product(possiblities)
 
-def calculateTime(permutations):
+def calculateTime(permutations, persec):
     # calculate rough time to guess the password based on output of {calculateStrength} 10 per second
-    seconds = permutations
+    seconds = permutations / int(persec)
     minutes = 0
     hours = 0
     days = 0
@@ -81,28 +75,32 @@ def calculateTime(permutations):
         minutes = math.floor(seconds / 60)
         hours = math.floor(minutes / 60)
         days = math.floor(hours / 24)
-        
+        hours = hours - days*24
+        minutes = minutes - (hours*60) - (days*24*(60))
+        seconds = seconds - minutes*60 - (hours*60**2) - (days*24*(60**2))
 
-    return f"{days}d: {hours}h: {minutes}m: {seconds}s"        
+
+    return f"it could take up to {days:,} days, {hours} hours, {minutes} minutes and {seconds} seconds to brute force the password."        
 
 
 if __name__ == "__main__":  
+    os.system('cls')
     running = True
     # take in password requirements
     while running:
         passwordRec = passwordRequirements(
-            True if input("Require special characters? (Y/n) ") != "n" else False,
-            True if input("Require numbers? (Y/n) ") != "n" else False,
-            True if input("Require capital letters? (Y/n) ") != "n" else False,
-            handleNotInt(input("Input minimum password length: "))
+            True if input("Require special characters? (y/N) ") == "y" else False,
+            True if input("Require numbers? (y/N) ") == "y" else False,
+            True if input("Require capital letters? (y/N) ") == "y" else False,
+            handleNotInt(input("Input minimum password length: "), 4)
         )
-        print("")
+        persec = handleNotInt(input("input guesses per second: "), 1)
 
         perm = calculateStrength(passwordRec)
-        print("number of permuatitions: ", perm)
-        print(calculateTime(perm))
+        print("\nnumber of permutations: ", perm)
+        print(calculateTime(perm, persec))
 
-        if input("Exit (Y/n) ") == "n":
+        if input("\nExit (Y/n) ") == "n":
             os.system('cls')
         else:
             os.system('cls')
